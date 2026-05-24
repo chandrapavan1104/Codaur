@@ -1,0 +1,56 @@
+{
+  "name": "codaur",
+  "version": "0.1.0",
+  "description": "Local usage and limit reporter for coding-agent CLIs and desktop apps.",
+  "type": "module",
+  "bin": {
+    "codaur": "./bin/codaur.mjs"
+  },
+  "files": [
+    "bin",
+    "data",
+    "scripts",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node ./bin/codaur.mjs",
+    "usage": "node ./bin/codaur.mjs",
+    "test": "node --check ./bin/codaur.mjs && node --check ./scripts/update-limits.mjs",
+    "update-limits": "node ./scripts/update-limits.mjs"
+  },
+  "keywords": [
+    "codaur",
+    "codex",
+    "claude",
+    "gemini",
+    "antigravity",
+    "coding-agent",
+    "ai-agent",
+    "usage",
+    "rate-limits",
+    "tokens",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "main": "./bin/codaur.mjs",
+  "author": "Chandra Pavan",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chandrapavan1104/codaur.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chandrapavan1104/codaur/issues"
+  },
+  "homepage": "https://github.com/chandrapavan1104/codaur#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}

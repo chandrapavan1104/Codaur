@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "updatedAt": "2026-05-24T03:43:25.268Z",
+  "refreshIntervalDays": 7,
+  "providers": {
+    "codex": {
+      "sourceUrl": "https://developers.openai.com/codex/pricing",
+      "plans": {},
+      "notes": [
+        "Codex Desktop exposes local primary/secondary percentage snapshots in session JSONL when available."
+      ]
+    },
+    "claude": {
+      "sourceUrl": "https://code.claude.com/docs/en/statusline",
+      "plans": {},
+      "notes": [
+        "Claude Code statusLine JSON can include rate_limits.five_hour.used_percentage and rate_limits.seven_day.used_percentage."
+      ]
+    },
+    "gemini": {
+      "sourceUrl": "https://developers.google.com/gemini-code-assist/resources/quotas",
+      "plans": {
+        "free": {
+          "label": "For individuals (free)",
+          "quotas": {
+            "dailyRequests": 1000
+          }
+        },
+        "aiPro": {
+          "label": "Google AI Pro",
+          "quotas": {
+            "dailyRequests": 1500
+          }
+        },
+        "aiUltra": {
+          "label": "Google AI Ultra",
+          "quotas": {
+            "dailyRequests": 2000
+          }
+        },
+        "standard": {
+          "label": "Standard",
+          "quotas": {
+            "dailyRequests": 1500
+          }
+        },
+        "enterprise": {
+          "label": "Enterprise",
+          "quotas": {
+            "dailyRequests": 2000
+          }
+        }
+      },
+      "notes": [
+        "Daily request limits are public Gemini Code Assist quota values. Local event counting is an estimate, not provider billing data."
+      ]
+    },
+    "antigravity": {
+      "sourceUrl": "https://antigravity.google/docs/plans",
+      "plans": {},
+      "notes": [
+        "Antigravity plan limits are work-based and no numeric default quota is published. Configure customLimits to calculate a local estimate."
+      ]
+    }
+  },
+  "sourceChecks": [
+    {
+      "url": "https://developers.openai.com/codex/pricing",
+      "ok": true,
+      "statusCode": 200,
+      "lastModified": "Sat, 23 May 2026 12:26:38 GMT",
+      "etag": "\"59f031171ed168d89b198df0a97f5226\"",
+      "checkedAt": "2026-05-24T03:43:24.998Z"
+    },
+    {
+      "url": "https://code.claude.com/docs/en/statusline",
+      "ok": true,
+      "statusCode": 200,
+      "lastModified": null,
+      "etag": null,
+      "checkedAt": "2026-05-24T03:43:25.015Z"
+    },
+    {
+      "url": "https://developers.google.com/gemini-code-assist/resources/quotas",
+      "ok": true,
+      "statusCode": 200,
+      "lastModified": "Wed, 20 May 2026 16:35:32 GMT",
+      "etag": null,
+      "checkedAt": "2026-05-24T03:43:25.268Z"
+    },
+    {
+      "url": "https://antigravity.google/docs/plans",
+      "ok": true,
+      "statusCode": 200,
+      "lastModified": null,
+      "etag": "\"7DrmLQ\"",
+      "checkedAt": "2026-05-24T03:43:25.104Z"
+    }
+  ]
+}
