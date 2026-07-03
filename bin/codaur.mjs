@@ -1057,17 +1057,34 @@ function collectAntigravityUsage(options, config) {
     report.warnings.push('Antigravity local protobuf conversations do not expose a reliable project path for filtering.');
   }
 
-  const conversations = collectFiles(conversationsDir, (_path, name) => name.endsWith('.pb'))
+  // Antigravity moved from flat `.pb` protobuf files to a per-conversation
+  // SQLite database (`<id>.db`) whose payloads are protobuf blobs. Token usage
+  // isn't in a readable column, but conversation and step counts are — count
+  // both formats so old and new layouts report activity.
+  const conversations = collectFiles(
+    conversationsDir,
+    (_path, name) => name.endsWith('.db') || name.endsWith('.pb'),
+  )
     .map((file) => {
       const stat = statSync(file);
       const updated = stat.mtime.toISOString();
+      let events = null;
+      if (file.endsWith('.db')) {
+        try {
+          const row = sqliteJson(file, 'select count(*) as steps from steps;')[0];
+          events = Number(row?.steps ?? 0);
+        } catch {
+          events = null; // locked / unreadable db — still counts as a conversation
+        }
+      }
       return {
-        id: basename(file, '.pb'),
+        id: basename(file).replace(/\.(db|pb)$/, ''),
         updated,
         created: stat.birthtime.toISOString(),
         model: null,
         cwd: null,
         tokens: null,
+        events,
         usage: null,
         source: file,
       };
@@ -1085,18 +1102,18 @@ function collectAntigravityUsage(options, config) {
     }
     const dailyRow = daily.get(day);
     dailyRow.threads += 1;
-    dailyRow.events += 1;
+    dailyRow.events += row.events ?? 0;
   }
 
   report.totals.threads = conversations.length;
-  report.totals.events = conversations.length;
+  report.totals.events = conversations.reduce((sum, c) => sum + (c.events ?? 0), 0);
   report.totals.tokens = null;
   report.totals.todayTokens = null;
   report.recentDailyTotals = [...daily.values()].sort((a, b) => b.day.localeCompare(a.day)).slice(0, options.days);
   report.recentThreads = conversations.sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated)).slice(0, DEFAULT_THREAD_LIMIT);
   report.limitUsage = antigravityLimitUsage(report, config);
-  report.warnings.push('Antigravity stores conversations as protobuf files; no readable local token counters were found.');
-  report.warnings.push('Antigravity local logs show model polling/auth activity but not per-turn token usage or rate-limit snapshots.');
+  report.warnings.push('Antigravity stores each conversation as a per-conversation SQLite database of protobuf-encoded steps; conversation and step counts are readable, per-turn token usage is not.');
+  report.warnings.push('Antigravity does not expose local rate-limit snapshots or numeric quotas.');
   return report;
 }
 
