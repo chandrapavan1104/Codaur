@@ -11,8 +11,8 @@ const DEFAULT_DAYS = 30;
 const DEFAULT_THREAD_LIMIT = 5;
 const WATCH_INTERVAL_MS = 60_000;
 const LIMIT_REFRESH_MS = 7 * 24 * 60 * 60 * 1000;
-const PROVIDERS = ['codex', 'claude', 'gemini', 'antigravity'];
-const VERSION = '0.1.0';
+const PROVIDERS = ['codex', 'claude', 'gemini', 'qwen', 'antigravity'];
+const VERSION = '0.2.0';
 const CLI_PATH = fileURLToPath(import.meta.url);
 const PROJECT_ROOT = dirname(dirname(CLI_PATH));
 const DEFAULT_LIMITS_FILE = join(PROJECT_ROOT, 'data', 'limits.default.json');
@@ -38,7 +38,7 @@ Commands:
   integrate claude       Install opt-in Claude statusLine capture integration.
 
 Options:
-  --provider <name>      Provider to report: codex, claude, gemini, antigravity, all. Default: codex.
+  --provider <name>      Provider: codex, claude, gemini, qwen, antigravity, all. Default: codex.
   --today                Show only today's period rows.
   --days <n>             Number of recent days to report. Default: ${DEFAULT_DAYS}.
   --project <path>       Limit project-aware totals to a project path.
@@ -305,6 +305,7 @@ function defaultConfig() {
     codex: { plan: null },
     claude: { plan: null },
     gemini: { plan: null },
+    qwen: { plan: 'local' },
     antigravity: { plan: null, customLimits: [] },
   };
 }
@@ -358,6 +359,10 @@ function bundledRegistryFallback() {
           standard: { label: 'Standard', quotas: { dailyRequests: 1500 } },
           enterprise: { label: 'Enterprise', quotas: { dailyRequests: 2000 } },
         },
+      },
+      qwen: {
+        plans: { local: { label: 'Local Ollama', quotas: {} } },
+        notes: ['Qwen runs locally through Ollama and has no provider quota.'],
       },
       antigravity: {
         sourceUrl: 'https://antigravity.google/docs/plans',
@@ -1021,6 +1026,55 @@ function collectGeminiUsage(options, config, registry) {
   return report;
 }
 
+function qwenUsageFromRow(row) {
+  const input = Number(row?.inputTokens ?? 0);
+  const output = Number(row?.outputTokens ?? 0);
+  return {
+    inputTokens: input,
+    outputTokens: output,
+    cachedTokens: 0,
+    cacheCreationTokens: 0,
+    cacheReadTokens: 0,
+    reasoningTokens: 0,
+    toolTokens: 0,
+    totalTokens: Number(row?.totalTokens ?? input + output),
+  };
+}
+
+function collectQwenUsage(options) {
+  const usageFile = process.env.QWEN_USAGE_FILE || join(homedir(), '.codeasachat', 'qwen_usage.jsonl');
+  const report = makeBaseReport(
+    'qwen', dirname(usageFile), { usageFile, runtime: 'Ollama /api/chat' }, options,
+  );
+  report.limitUsage = [
+    unknownLimit('local', 'tokens', 'Local Ollama model: no subscription or provider quota.'),
+  ];
+  if (!existsSync(usageFile)) {
+    report.warnings.push(`Qwen usage log not found at ${usageFile}. New Gajala Qwen turns create it automatically.`);
+    return report;
+  }
+
+  const events = [];
+  for (const row of readJsonl(usageFile)) {
+    if (!row?.timestamp || !matchesProject(row.cwd ?? null, options.project)) {
+      continue;
+    }
+    events.push({
+      threadId: row.sessionId ?? row.id ?? `qwen-${row.timestamp}`,
+      timestamp: row.timestamp,
+      created: row.timestamp,
+      model: row.model ?? 'qwen',
+      cwd: row.cwd ?? null,
+      usage: qwenUsageFromRow(row),
+      source: row.source ?? usageFile,
+    });
+  }
+
+  summarizeEvents(events, report, options);
+  report.warnings.push('Qwen counts are exact Ollama prompt_eval_count + eval_count values recorded by Code-as-a-chat; prompts and replies are not stored.');
+  return report;
+}
+
 function antigravityLimitUsage(report, config) {
   const customLimits = config.antigravity?.customLimits;
   if (Array.isArray(customLimits) && customLimits.length > 0) {
@@ -1122,6 +1176,7 @@ function collectUsage(options, config, registry) {
     codex: (providerOptions) => collectCodexUsage(providerOptions),
     claude: (providerOptions) => collectClaudeUsage(providerOptions),
     gemini: (providerOptions) => collectGeminiUsage(providerOptions, config, registry),
+    qwen: (providerOptions) => collectQwenUsage(providerOptions),
     antigravity: (providerOptions) => collectAntigravityUsage(providerOptions, config),
   };
 

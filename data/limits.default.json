@@ -55,6 +55,17 @@
         "Daily request limits are public Gemini Code Assist quota values. Local event counting is an estimate, not provider billing data."
       ]
     },
+    "qwen": {
+      "plans": {
+        "local": {
+          "label": "Local Ollama",
+          "quotas": {}
+        }
+      },
+      "notes": [
+        "Qwen runs locally through Ollama. Token counts are local measurements and there is no provider quota."
+      ]
+    },
     "antigravity": {
       "sourceUrl": "https://antigravity.google/docs/plans",
       "plans": {},

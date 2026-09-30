@@ -1,12 +1,12 @@
 # Codaur
 
-**Cod**ing-**a**gent **u**sage **r**eport - a local CLI for tracking coding-agent usage, tokens, and limit percentages across Codex, Claude Code, Gemini CLI, and Antigravity.
+**Cod**ing-**a**gent **u**sage **r**eport - a local CLI for tracking usage, tokens, and limit percentages across Codex, Claude Code, Gemini CLI, local Qwen/Ollama, and Antigravity.
 
 Codaur reads local usage files from your machine. It does not scrape dashboards during normal reports and does not send your transcripts to a remote service.
 
 ## Features
 
-- One command for Codex, Claude Code, Gemini CLI, and Antigravity local usage.
+- One command for Codex, Claude Code, Gemini CLI, local Qwen/Ollama, and Antigravity usage.
 - Token totals, recent daily totals, and recent sessions.
 - Usage-limit percentages when providers expose reliable data.
 - Weekly refreshed limits registry for public plan metadata.
@@ -44,6 +44,7 @@ codaur --provider all
 | Codex Desktop | `~/.codex/state_5.sqlite`, `~/.codex/sessions/**/*.jsonl` | Native local primary/secondary snapshots when present |
 | Claude Code | `~/.claude/projects/**/*.jsonl` | Opt-in statusLine capture via `codaur integrate claude` |
 | Gemini CLI | `~/.gemini/tmp/**/chats/*.jsonl`, `~/.gemini/projects.json` | Estimated daily request percentage from configured plan |
+| Qwen via Ollama | `~/.codeasachat/qwen_usage.jsonl` | Local model; exact tokens, no provider quota |
 | Antigravity | `~/.gemini/antigravity/conversations` | `n/a` by default unless custom limits are configured |
 
 ## Common Commands
@@ -53,6 +54,7 @@ codaur
 codaur --provider codex
 codaur --provider claude
 codaur --provider gemini
+codaur --provider qwen
 codaur --provider antigravity
 codaur --provider all
 codaur --json
@@ -144,6 +146,7 @@ CODEX_HOME=/path/to/.codex codaur --provider codex
 CLAUDE_HOME=/path/to/.claude codaur --provider claude
 GEMINI_HOME=/path/to/.gemini codaur --provider gemini
 ANTIGRAVITY_HOME=/path/to/antigravity codaur --provider antigravity
+QWEN_USAGE_FILE=/path/to/qwen_usage.jsonl codaur --provider qwen
 ```
 
 Use `XDG_CONFIG_HOME` and `XDG_CACHE_HOME` to redirect Codaur config and cache paths during tests or automation.

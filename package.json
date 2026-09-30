@@ -1,7 +1,7 @@
 {
   "name": "codaur",
-  "version": "0.1.0",
-  "description": "Local usage and limit reporter for coding-agent CLIs and desktop apps.",
+  "version": "0.2.0",
+  "description": "Local usage and limit reporter for cloud coding agents and Ollama models.",
   "type": "module",
   "bin": {
     "codaur": "./bin/codaur.mjs"
@@ -20,7 +20,7 @@
   "scripts": {
     "start": "node ./bin/codaur.mjs",
     "usage": "node ./bin/codaur.mjs",
-    "test": "node --check ./bin/codaur.mjs && node --check ./scripts/update-limits.mjs",
+    "test": "node --check ./bin/codaur.mjs && node --check ./scripts/update-limits.mjs && node ./tests/qwen-smoke.mjs",
     "update-limits": "node ./scripts/update-limits.mjs"
   },
   "keywords": [
@@ -28,6 +28,8 @@
     "codex",
     "claude",
     "gemini",
+    "qwen",
+    "ollama",
     "antigravity",
     "coding-agent",
     "ai-agent",

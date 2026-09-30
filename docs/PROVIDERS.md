@@ -21,3 +21,12 @@ Codaur reads Gemini CLI chat logs from `~/.gemini/tmp/**/chats/*.jsonl` and proj
 ## Antigravity
 
 Codaur currently reports local Antigravity conversation activity from protobuf conversation files. It does not parse per-turn token usage from those protobuf files, and public Antigravity plan pages do not publish numeric default quotas. Usage percentage is `n/a` unless you configure custom limits.
+
+## Qwen / Ollama
+
+Ollama returns exact `prompt_eval_count` and `eval_count` values with each
+response but does not expose a historical usage API. Code-as-a-chat records
+that metrics envelope to `~/.codeasachat/qwen_usage.jsonl`; prompts and replies
+are deliberately excluded. Codaur reports input, generated, total, daily, and
+per-project Qwen tokens from this file. Qwen is local and has no provider quota,
+so its percentage remains `n/a` rather than inventing a limit.
