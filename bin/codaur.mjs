@@ -702,6 +702,83 @@ function buildCodexDailyWhere(options) {
   return `where ${clauses.join(' and ')}`;
 }
 
+// Per-day Codex tokens from the session logs, attributed to the day each turn
+// happened. The state DB only knows a thread's lifetime total and creation
+// day, so a session started yesterday and used all day today counted as zero
+// today (long-lived sessions are the norm when a tool resumes one per project).
+// Each token_count event carries the session's running total; the increase
+// since the previous event is that turn's usage. A file's first event counts
+// only its own turn, so a resumed session cannot re-count earlier history.
+function codexDailyFromSessions(sessionsDir, options) {
+  const daily = new Map();
+  if (!existsSync(sessionsDir)) {
+    return null;
+  }
+  const cutoff = options.today ? null : dayCutoff(options.days).getTime();
+  const today = todayLocalDay();
+  for (const file of collectJsonlFiles(sessionsDir)) {
+    let mtime;
+    try {
+      mtime = statSync(file).mtimeMs;
+    } catch {
+      continue;
+    }
+    if (cutoff !== null && mtime < cutoff) {
+      continue;
+    }
+    if (options.today && localDay(mtime) !== today) {
+      continue;
+    }
+    let cwd = null;
+    let previous = null;
+    for (const line of readFileSync(file, 'utf8').split('\n')) {
+      if (cwd === null && line.includes('"session_meta"')) {
+        try {
+          cwd = JSON.parse(line)?.payload?.cwd ?? null;
+        } catch {
+          // keep scanning
+        }
+        continue;
+      }
+      if (!line.includes('"token_count"')) {
+        continue;
+      }
+      let parsed;
+      try {
+        parsed = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      const info = parsed?.payload?.type === 'token_count' ? parsed.payload.info : null;
+      const total = info?.total_token_usage?.total_tokens;
+      const last = info?.last_token_usage?.total_tokens;
+      if (typeof total !== 'number') {
+        continue;
+      }
+      let turn;
+      if (previous === null) {
+        turn = typeof last === 'number' ? last : 0;
+      } else {
+        turn = Math.max(0, total - previous);
+      }
+      previous = total;
+      if (!turn || !matchesProject(cwd, options.project)) {
+        continue;
+      }
+      const day = localDay(parsed.timestamp);
+      if (!day || (options.today && day !== today) || (cutoff !== null && Date.parse(parsed.timestamp) < cutoff)) {
+        continue;
+      }
+      const row = daily.get(day) ?? { tokens: 0, events: 0, files: new Set() };
+      row.tokens += turn;
+      row.events += 1;
+      row.files.add(file);
+      daily.set(day, row);
+    }
+  }
+  return daily;
+}
+
 function collectCodexUsage(options) {
   const codexHome = process.env.CODEX_HOME || join(homedir(), '.codex');
   const stateDb = join(codexHome, 'state_5.sqlite');
@@ -779,6 +856,22 @@ function collectCodexUsage(options) {
     tokens: Number(row.tokens ?? 0),
     usage: { ...blankUsage(), totalTokens: Number(row.tokens ?? 0) },
   }));
+  // Prefer per-turn attribution from the session logs when available.
+  const byDay = codexDailyFromSessions(sessionsDir, options);
+  if (byDay && byDay.size) {
+    report.totals.todayTokens = byDay.get(todayLocalDay())?.tokens ?? 0;
+    report.totals.todayUsage.totalTokens = report.totals.todayTokens;
+    report.recentDailyTotals = [...byDay.entries()]
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .slice(0, options.days)
+      .map(([day, row]) => ({
+        day,
+        threads: row.files.size,
+        events: row.events,
+        tokens: row.tokens,
+        usage: { ...blankUsage(), totalTokens: row.tokens },
+      }));
+  }
   report.recentThreads = recentThreads.map((row) => ({
     id: row.id,
     updated: row.updated,
